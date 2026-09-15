@@ -1,4 +1,4 @@
-# LoRA & QLoRA — Fine-Tuning LLMs (Beginner Guide)
+# LoRA & QLoRA — Fine-Tuning LLMs 
 
 ## 1. What is Quantization?
 
