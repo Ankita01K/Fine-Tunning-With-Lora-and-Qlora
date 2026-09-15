@@ -191,4 +191,4 @@ merged_model.save_pretrained("./qlora-merged-model")
 
 ---
 
-*References: LoRA — Hu et al., 2021 | QLoRA — Dettmers et al., 2023*
+
