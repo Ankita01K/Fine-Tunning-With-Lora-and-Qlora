@@ -87,3 +87,70 @@ A weight matrix of size **4096 × 4096** = ~16.7 million numbers.
 |---|---|
 | Full fine-tuning | 16,777,216 (100%) |
 | LoRA (rank = 8) | 65,536 (**~0.4%**) |
+
+
+
+
+
+## 🔧 Steps to Fine-Tune a Model
+
+### Using LoRA
+
+```mermaid
+flowchart TD
+    S1["1️⃣ Install libraries
+    (transformers, peft, accelerate, datasets)"] --> S2["2️⃣ Load base model
+    & tokenizer"]
+    S2 --> S3["3️⃣ Configure LoRA
+    (rank, alpha, target_modules)"]
+    S3 --> S4["4️⃣ Wrap model with LoRA
+    (get_peft_model)"]
+    S4 --> S5["5️⃣ Prepare dataset
+    (load + tokenize)"]
+    S5 --> S6["6️⃣ Train
+    (only A & B matrices update)"]
+    S6 --> S7["7️⃣ Save adapters"]
+```
+
+| Step | Action |
+|---|---|
+| 1 | Install `transformers`, `peft`, `accelerate`, `datasets` |
+| 2 | Load the pre-trained model and tokenizer from HuggingFace |
+| 3 | Define `LoraConfig` — set rank (`r`), `lora_alpha`, `dropout`, `target_modules` |
+| 4 | Apply `get_peft_model()` — freezes original weights, inserts trainable A & B matrices |
+| 5 | Load and tokenize your training dataset |
+| 6 | Run `Trainer` with `TrainingArguments` — only A & B matrices are updated |
+| 7 | Save the LoRA adapters (not the full model) with `model.save_pretrained()` |
+
+---
+
+### Using QLoRA
+
+```mermaid
+flowchart TD
+    Q1["1️⃣ Install libraries
+    (+ bitsandbytes)"] --> Q2["2️⃣ Load base model
+    in 4-bit (NF4)"]
+    Q2 --> Q3["3️⃣ Prepare model
+    for k-bit training"]
+    Q3 --> Q4["4️⃣ Configure & apply
+    LoRA (r, alpha, target_modules)"]
+    Q4 --> Q5["5️⃣ Prepare dataset
+    (load + tokenize)"]
+    Q5 --> Q6["6️⃣ Train
+    (base stays frozen + quantized)"]
+    Q6 --> Q7["7️⃣ Save or merge
+    adapters"]
+```
+
+| Step | Action |
+|---|---|
+| 1 | Install `transformers`, `peft`, `accelerate`, `datasets`, `bitsandbytes` |
+| 2 | Load base model in 4-bit using `BitsAndBytesConfig` (`load_in_4bit=True`, `nf4`, double quant) |
+| 3 | Call `prepare_model_for_kbit_training()` to stabilize the quantized model for training |
+| 4 | Define `LoraConfig` and apply `get_peft_model()` — same as LoRA |
+| 5 | Load and tokenize your training dataset |
+| 6 | Run `Trainer` — only A & B matrices update; base model stays frozen and quantized |
+| 7 | Save adapters, or run `merge_and_unload()` to bake LoRA into a deployable model |
+
+> **Key difference:** QLoRA adds one extra step — loading the base model in 4-bit — before the LoRA setup. Everything else is the same.
